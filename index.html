@@ -603,5 +603,18 @@ document.getElementById('hdate').textContent=NOW.toLocaleDateString('en-GB',{wee
 document.getElementById('sn').textContent=calcStreak();
 renderStrip(); render();
 </script>
+  renderStrip(); render();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
+</script>
+
+</body>
+</html>
 </body>
 </html>
