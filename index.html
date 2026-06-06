@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DRO">
+<meta name="theme-color" content="#080808">
+<title>DRO — Daily Routine Organizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #080808;
+  --c1:      #111111;
+  --c2:      #181818;
+  --c3:      #222222;
+  --c4:      #2a2a2a;
+  --line:    rgba(255,255,255,0.07);
+  --line2:   rgba(255,255,255,0.13);
+  --line3:   rgba(255,255,255,0.22);
+  --white:   #ffffff;
+  --t1:      #f0ece6;
+  --t2:      #9a9590;
+  --t3:      #5a5652;
+  --gold:    #d4a843;
+  --goldb:   #f0c96a;
+  --goldg:   rgba(212,168,67,0.18);
+  --green:   #4ade80;
+  --teal:    #38d9c0;
+  --purple:  #a78bfa;
+  --amber:   #fbbf24;
+  --red:     #f87171;
+  --blue:    #60a5fa;
+  --nav:     68px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; background:var(--bg); color:var(--t1); font-family:'Outfit',sans-serif; overflow:hidden; -webkit-font-smoothing:antialiased; }
+
+/* ═══ APP SHELL ═══ */
+#app { height:100dvh; display:flex; flex-direction:column; max-width:430px; margin:0 auto; }
+
+/* ═══ HEADER ═══ */
+.hdr { padding:54px 24px 0; flex-shrink:0; display:flex; align-items:flex-start; justify-content:space-between; }
+.hdr-day { font-size:38px; font-weight:900; color:var(--white); letter-spacing:-1.5px; line-height:1; }
+.hdr-date { font-size:14px; color:var(--t3); margin-top:5px; font-weight:400; letter-spacing:0.01em; }
+.streak {
+  display:flex; align-items:center; gap:7px;
+  background:var(--c2); border:1.5px solid var(--line2);
+  border-radius:50px; padding:9px 16px;
+  font-size:15px; font-weight:700; color:var(--t1);
+  white-space:nowrap;
+}
+
+/* ═══ DAY STRIP ═══ */
+.strip { display:flex; gap:7px; padding:18px 24px 14px; overflow-x:auto; scrollbar-width:none; flex-shrink:0; }
+.strip::-webkit-scrollbar { display:none; }
+.dc {
+  flex-shrink:0; width:52px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:10px 0; border-radius:14px;
+  border:1.5px solid var(--line); background:var(--c1);
+  cursor:pointer; transition:all 0.15s;
+}
+.dc:active { transform:scale(0.91); }
+.dc.on { background:var(--gold); border-color:var(--gold); box-shadow:0 6px 24px rgba(212,168,67,0.35); }
+.dc .dn { font-size:10px; font-weight:700; color:var(--t3); letter-spacing:.07em; text-transform:uppercase; }
+.dc .dd { font-size:20px; font-weight:800; color:var(--t1); line-height:1; }
+.dc .dot { width:5px; height:5px; border-radius:50%; background:transparent; margin-top:1px; }
+.dc.on .dn { color:rgba(0,0,0,0.5); }
+.dc.on .dd { color:#000; }
+.dc.on .dot { background:rgba(0,0,0,0.35); }
+.dc.prog .dot { background:var(--green); box-shadow:0 0 6px var(--green); }
+
+/* ═══ SCROLL BODY ═══ */
+.body { flex:1; overflow-y:auto; padding:0 24px calc(var(--nav) + 20px); overscroll-behavior:contain; }
+.body::-webkit-scrollbar { width:2px; }
+.body::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
+
+/* ═══ PROGRESS CARD ═══ */
+.prog-card {
+  background:var(--c1); border:1.5px solid var(--line);
+  border-radius:22px; padding:22px; margin-bottom:14px;
+}
+.prog-top { margin-bottom:14px; }
+.prog-sublabel { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--t3); margin-bottom:8px; }
+.prog-num { font-size:64px; font-weight:900; color:var(--white); letter-spacing:-3px; line-height:1; }
+.prog-bar { height:5px; background:var(--c3); border-radius:4px; overflow:hidden; margin-bottom:16px; }
+.prog-fill { height:100%; background:linear-gradient(90deg,var(--gold),var(--goldb)); border-radius:4px; transition:width 0.5s cubic-bezier(.4,0,.2,1); }
+.prog-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.prog-box { background:var(--c2); border-radius:14px; padding:14px 10px; text-align:center; }
+.prog-box-n { font-size:24px; font-weight:800; color:var(--white); line-height:1; }
+.prog-box-l { font-size:12px; font-weight:500; color:var(--t3); margin-top:4px; }
+
+/* ═══ DAY NOTE ═══ */
+.day-note {
+  background:var(--c1); border:1.5px solid var(--line);
+  border-left:3px solid var(--gold);
+  border-radius:14px; padding:14px 16px;
+  margin-bottom:20px;
+  font-size:14px; font-weight:500; color:var(--t2); line-height:1.65;
+}
+
+/* ═══ SECTION HEADER ═══ */
+.sec-wrap { margin-bottom:10px; margin-top:8px; }
+.sec-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.sec-name { font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--t3); }
+.bdg { font-size:11px; font-weight:700; padding:4px 11px; border-radius:20px; letter-spacing:0.02em; white-space:nowrap; }
+.bg  { background:rgba(212,168,67,.16);  color:#f0c96a;  border:1.5px solid rgba(212,168,67,.3); }
+.br  { background:rgba(248,113,113,.14); color:#fca5a5;  border:1.5px solid rgba(248,113,113,.28); }
+.bt  { background:rgba(56,217,192,.12);  color:var(--teal);   border:1.5px solid rgba(56,217,192,.25); }
+.bp  { background:rgba(167,139,250,.12); color:var(--purple); border:1.5px solid rgba(167,139,250,.25); }
+.ba  { background:rgba(74,222,128,.12);  color:var(--green);  border:1.5px solid rgba(74,222,128,.25); }
+.bc  { background:rgba(251,191,36,.12);  color:var(--amber);  border:1.5px solid rgba(251,191,36,.25); }
+.bn  { background:var(--c2);             color:var(--t2);     border:1.5px solid var(--line2); }
+
+/* ═══ TASK CARD ═══ */
+.task {
+  background:var(--c1); border:1.5px solid var(--line);
+  border-radius:18px;
+  display:flex; align-items:flex-start; gap:14px;
+  padding:16px 16px; cursor:pointer; margin-bottom:8px;
+  transition:all 0.15s;
+}
+.task:active { transform:scale(0.97); background:var(--c2); }
+.task:hover  { border-color:var(--line2); }
+.task.done   { opacity:0.26; }
+.task.done .task-t { text-decoration:line-through; }
+.task.opt    { border-style:dashed; }
+
+.chk {
+  width:28px; height:28px; border-radius:50%;
+  border:2px solid var(--line3);
+  flex-shrink:0; margin-top:2px;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.18s; background:transparent;
+}
+.task.done .chk { background:var(--gold); border-color:var(--gold); box-shadow:0 0 14px rgba(212,168,67,.5); }
+.chk-dot { width:9px; height:9px; background:#080808; border-radius:50%; opacity:0; transition:opacity 0.15s; }
+.task.done .chk-dot { opacity:1; }
+
+.task-body { flex:1; min-width:0; }
+.task-t  { font-size:16px; font-weight:600; color:var(--t1); line-height:1.4; }
+.task-m  { font-size:13px; font-weight:400; color:var(--t3); margin-top:5px; line-height:1.55; }
+.task-tm {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:12px; font-weight:600; color:var(--t3);
+  margin-top:8px; background:var(--c2); padding:4px 10px;
+  border-radius:20px; border:1px solid var(--line);
+}
+
+.reset-row { display:flex; justify-content:flex-end; margin-top:10px; }
+.reset-btn {
+  background:none; border:1.5px solid var(--line2); border-radius:10px;
+  padding:8px 18px; font-size:13px; font-weight:600; color:var(--t3);
+  cursor:pointer; font-family:'Outfit',sans-serif; transition:all 0.15s;
+}
+.reset-btn:hover { color:var(--t2); border-color:var(--line3); }
+
+/* ═══ PAGE VIEWS ═══ */
+.view-title { font-size:30px; font-weight:900; color:var(--white); letter-spacing:-1px; margin:6px 0 6px; }
+.view-sub   { font-size:14px; font-weight:400; color:var(--t2); line-height:1.6; margin-bottom:18px; }
+
+/* Week rows */
+.week-row {
+  background:var(--c1); border:1.5px solid var(--line); border-radius:18px;
+  padding:16px 18px; display:flex; align-items:center; gap:12px;
+  cursor:pointer; margin-bottom:7px; transition:all 0.15s;
+}
+.week-row:active { transform:scale(0.97); }
+.week-row:hover  { border-color:var(--line2); }
+.w-day { font-size:15px; font-weight:700; color:var(--t1); min-width:84px; }
+.w-bar { flex:1; height:5px; background:var(--c3); border-radius:4px; overflow:hidden; }
+.w-fill { height:100%; border-radius:4px; transition:width 0.4s; }
+.w-pct { font-size:14px; font-weight:700; color:var(--t2); min-width:36px; text-align:right; }
+.gym-tag {
+  font-size:11px; font-weight:700; padding:4px 10px;
+  border-radius:20px; background:rgba(74,222,128,.12);
+  color:var(--green); border:1.5px solid rgba(74,222,128,.25);
+}
+
+/* Project cards */
+.proj-card {
+  background:var(--c1); border:1.5px solid var(--line);
+  border-radius:22px; padding:20px; margin-bottom:10px;
+}
+.proj-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.proj-name { font-size:17px; font-weight:800; color:var(--white); line-height:1.3; }
+.proj-step { font-size:14px; font-weight:400; color:var(--t2); line-height:1.7; margin-bottom:8px; }
+.proj-nxt  { font-size:13px; font-weight:500; color:var(--t3); font-style:italic; margin-bottom:14px; line-height:1.5; }
+.proj-ck {
+  display:flex; align-items:center; gap:12px;
+  padding-top:14px; border-top:1.5px solid var(--line);
+  cursor:pointer; transition:opacity 0.15s;
+}
+.proj-ck:active { opacity:0.6; }
+.proj-ck.done .proj-ck-lbl { text-decoration:line-through; color:var(--t3); }
+.proj-chkbox {
+  width:26px; height:26px; border-radius:50%;
+  border:2px solid var(--line3); display:flex; align-items:center;
+  justify-content:center; flex-shrink:0; transition:all 0.18s;
+}
+.proj-ck.done .proj-chkbox { background:var(--gold); border-color:var(--gold); box-shadow:0 0 12px rgba(212,168,67,.45); }
+.proj-chkdot { width:9px; height:9px; background:#080808; border-radius:50%; opacity:0; }
+.proj-ck.done .proj-chkdot { opacity:1; }
+.proj-ck-lbl { font-size:14px; font-weight:600; color:var(--t1); }
+
+.add-btn {
+  width:100%; padding:16px; border-radius:18px;
+  border:1.5px dashed var(--line2); background:none;
+  font-size:14px; font-weight:600; color:var(--t2);
+  cursor:pointer; text-align:center; font-family:'Outfit',sans-serif;
+  margin-top:4px; transition:all 0.15s;
+}
+.add-btn:hover { border-color:var(--line3); color:var(--t1); }
+
+/* Alarms */
+.alarm-card {
+  background:var(--c1); border:1.5px solid var(--line);
+  border-radius:22px; overflow:hidden; margin-bottom:12px;
+}
+.alarm-row {
+  display:flex; align-items:center; gap:14px;
+  padding:16px 20px; border-bottom:1px solid var(--line);
+}
+.alarm-row:last-child { border-bottom:none; }
+.a-time { font-size:22px; font-weight:800; color:var(--gold); min-width:68px; letter-spacing:-0.5px; }
+.a-lbl  { font-size:14px; font-weight:500; color:var(--t2); flex:1; line-height:1.4; }
+.a-copy {
+  background:var(--c2); border:1.5px solid var(--line2); border-radius:10px;
+  padding:7px 14px; font-size:12px; font-weight:700; color:var(--t2);
+  cursor:pointer; font-family:'Outfit',sans-serif; transition:all 0.15s; white-space:nowrap;
+}
+.a-copy:active { background:var(--c3); }
+.a-copy.ok { border-color:var(--green); color:var(--green); }
+
+.sync-box {
+  background:var(--c1); border:1.5px solid var(--line); border-left:3px solid var(--gold);
+  border-radius:16px; padding:18px; margin-bottom:12px;
+  font-size:14px; font-weight:400; color:var(--t2); line-height:1.9;
+}
+.sync-box strong { display:block; font-size:15px; font-weight:700; color:var(--t1); margin-bottom:8px; }
+
+.copy-all-btn {
+  width:100%; padding:16px; border-radius:18px;
+  border:1.5px solid var(--line2); background:var(--c2);
+  font-size:15px; font-weight:700; color:var(--t1);
+  cursor:pointer; font-family:'Outfit',sans-serif; transition:all 0.15s;
+}
+.copy-all-btn:active { background:var(--c3); transform:scale(0.97); }
+
+/* ═══ BOTTOM NAV ═══ */
+.bnav {
+  position:absolute; bottom:0; left:0; right:0; height:var(--nav);
+  background:rgba(8,8,8,0.95); backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-top:1.5px solid var(--line); display:flex;
+  padding-bottom:env(safe-area-inset-bottom,0px); z-index:10;
+}
+.nb {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:5px; background:none; border:none;
+  cursor:pointer; font-family:'Outfit',sans-serif; padding:8px 0;
+  color:var(--t3); transition:color 0.15s;
+}
+.nb svg { width:26px; height:26px; stroke-width:1.8; }
+.nb span { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.nb.on { color:var(--gold); }
+
+/* ═══ TOAST ═══ */
+.toast {
+  position:fixed; top:24px; left:50%;
+  transform:translateX(-50%) translateY(-120px);
+  background:var(--c3); border:1.5px solid var(--line3);
+  border-radius:50px; padding:12px 24px;
+  font-size:14px; font-weight:600; color:var(--t1);
+  transition:transform 0.3s cubic-bezier(.4,0,.2,1);
+  z-index:999; white-space:nowrap;
+  backdrop-filter:blur(16px); box-shadow:0 8px 32px rgba(0,0,0,0.5);
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr">
+    <div>
+      <div class="hdr-day" id="hday">Sunday</div>
+      <div class="hdr-date" id="hdate"></div>
+    </div>
+    <div class="streak">🔥 <span id="sn">0</span> streak</div>
+  </div>
+  <div class="strip" id="strip"></div>
+  <div class="body" id="body"></div>
+  <nav class="bnav">
+    <button class="nb on" id="n-today" onclick="gt('today')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M8 4v5M16 4v5M7 14h5M7 18h3"/></svg>
+      <span>Today</span>
+    </button>
+    <button class="nb" id="n-week" onclick="gt('week')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 9h18M7 4v5M17 4v5M7 14h10"/></svg>
+      <span>Week</span>
+    </button>
+    <button class="nb" id="n-proj" onclick="gt('proj')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></svg>
+      <span>Projects</span>
+    </button>
+    <button class="nb" id="n-rem" onclick="gt('rem')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span>Alarms</span>
+    </button>
+  </nav>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const DE=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const GYM=[0,2,3];
+const NOW=new Date(), TD=NOW.getDay();
+let cd=TD, ct='today';
+
+const REMS={
+  0:[{t:'4:00',l:'Fajr — command review or rest'},{t:'6:50',l:'Kids to school'},{t:'7:45',l:'Commute — calls + skill audio'},{t:'15:00',l:'Gym session'},{t:'20:30',l:'Weekly alignment 60 min'}],
+  1:[{t:'4:00',l:'Fajr — side projects or rest'},{t:'6:50',l:'Kids to school'},{t:'7:45',l:'Commute — calls + skill audio'}],
+  2:[{t:'4:00',l:'Fajr — cars project or rest'},{t:'6:50',l:'Kids to school'},{t:'7:45',l:'Commute'},{t:'15:00',l:'Gym session'}],
+  3:[{t:'4:00',l:'Fajr — side projects or rest'},{t:'6:50',l:'Kids to school'},{t:'7:45',l:'Commute'},{t:'15:00',l:'Gym session'},{t:'17:00',l:'Project reporting session'}],
+  4:[{t:'4:00',l:'Fajr — unstuck session or rest'},{t:'6:50',l:'Kids to school'},{t:'7:45',l:'Commute'}],
+  5:[{t:'5:00',l:'Side work or Mizan block'},{t:'12:00',l:'Jumma prayer'},{t:'13:30',l:'Post-Jumma sleep 2 hrs'},{t:'16:00',l:'Parents and siblings — call or visit'}],
+  6:[{t:'4:30',l:'Side projects 1 hr'},{t:'7:45',l:'Commute'},{t:'16:00',l:'Personal alignment 90 min'},{t:'16:45',l:'Cars weekly check'}]
+};
+
+const SCH={
+  0:{n:'Week opens. Command briefing tonight. 💪 Gym day.',s:[
+    {l:'Fajr window',b:'bg',t:'4:00 – 7:30',k:[
+      {i:'0a',tt:'Option A — weekly command review',m:'Scan all projects red / yellow / green · write 3 priorities for the week',tm:'4:30',o:0},
+      {i:'0b',tt:'Option B — pray and rest until 7:30',m:'Valid recovery · no guilt · mark done and move on',tm:'4:00',o:1}]},
+    {l:'School run',b:'bn',t:'by 7:00',k:[{i:'0c',tt:'Kids to school or Uber',m:'',tm:'6:50'}]},
+    {l:'Commute — going',b:'bp',t:'~1 hr',k:[
+      {i:'0d',tt:'Work calls — clear overnight backlog',m:'Coordinate · respond · brief the day ahead',tm:'7:45'},
+      {i:'0e',tt:'Last 15 min — skill audio',m:'Current 60-day skill · listen only · no calls',tm:''}]},
+    {l:'Main job',b:'br',t:'8:00 – 3:00',k:[
+      {i:'0f',tt:'Job — primary deliverables',m:'',tm:'8:00'},
+      {i:'0g',tt:'Side gig slot — 1 hr inside day',m:'Outside visit · client call · document review',tm:''},
+      {i:'0h',tt:'Talent & management — 20 min',m:'Brief · delegate · coach one thing today',tm:''}]},
+    {l:'Gym 💪',b:'ba',t:'3:00 – 4:30',k:[{i:'0i',tt:'Gym session — 60 to 90 min',m:'Recharge before commute home',tm:'15:00'}]},
+    {l:'Commute — return',b:'bp',t:'~1 hr',k:[{i:'0j',tt:'Decompress · voice note for tomorrow',m:'No calls for the first 20 minutes',tm:''}]},
+    {l:'Weekly alignment',b:'bc',t:'8:30 – 9:30 pm',k:[
+      {i:'0k',tt:'Personal alignment — 60 min',m:'Review week · set next 7 days · check all projects pulse',tm:'20:30'},
+      {i:'0l',tt:'One family action',m:'Call · payment · school · maintenance',tm:''}]},
+    {l:'Evening — recovery',b:'bn',t:'after 9:30',k:[{i:'0m',tt:'TV and rest — legitimate shutdown',m:'Not wasted time. You earned this.',tm:''}]}
+  ]},
+  1:{n:'Attack day — paid side projects.',s:[
+    {l:'Fajr window',b:'bg',t:'4:00 – 7:30',k:[
+      {i:'1a',tt:'Option A — paid side projects',m:'Most overdue client · one deliverable only · finish something',tm:'4:30',o:0},
+      {i:'1b',tt:'Option B — pray and rest until 7:30',m:'',tm:'4:00',o:1}]},
+    {l:'School run',b:'bn',t:'by 7:00',k:[{i:'1c',tt:'Kids to school or Uber',m:'',tm:'6:50'}]},
+    {l:'Commute — going',b:'bp',t:'~1 hr',k:[
+      {i:'1d',tt:'Work calls',m:'',tm:'7:45'},
+      {i:'1e',tt:'Last 15 min — skill audio',m:'',tm:''}]},
+    {l:'Main job',b:'br',t:'8:00 – 6:00',k:[
+      {i:'1f',tt:'Job — primary deliverables',m:'',tm:'8:00'},
+      {i:'1g',tt:'Side gig slot — 1 hr',m:'',tm:''},
+      {i:'1h',tt:'Talent & management — 20 min',m:'',tm:''}]},
+    {l:'Commute — return',b:'bp',t:'~1 hr',k:[{i:'1i',tt:'Decompress · voice note for tomorrow',m:'',tm:''}]},
+    {l:'Evening — recovery',b:'bn',t:'after 7 pm',k:[{i:'1j',tt:'Family + TV and rest',m:'No project decisions after 7 pm',tm:''}]}
+  ]},
+  2:{n:'Cars project day + gym 💪',s:[
+    {l:'Fajr window',b:'bg',t:'4:00 – 7:30',k:[
+      {i:'2a',tt:'Option A — cars project',m:'Car 2 progress · car 3 search · contracts · income review',tm:'4:30',o:0},
+      {i:'2b',tt:'Option B — pray and rest until 7:30',m:'',tm:'4:00',o:1}]},
+    {l:'School run',b:'bn',t:'by 7:00',k:[{i:'2c',tt:'Kids to school or Uber',m:'',tm:'6:50'}]},
+    {l:'Commute',b:'bp',t:'~1 hr',k:[
+      {i:'2d',tt:'Work calls',m:'',tm:'7:45'},
+      {i:'2e',tt:'Last 15 min — skill audio',m:'',tm:''}]},
+    {l:'Main job',b:'br',t:'8:00 – 3:00',k:[
+      {i:'2f',tt:'Job — primary deliverables',m:'',tm:'8:00'},
+      {i:'2g',tt:'Side gig slot — 1 hr',m:'',tm:''},
+      {i:'2h',tt:'Talent & management — 20 min',m:'',tm:''}]},
+    {l:'Gym 💪',b:'ba',t:'3:00 – 4:30',k:[{i:'2i',tt:'Gym session — 60 to 90 min',m:'',tm:'15:00'}]},
+    {l:'Commute — return',b:'bp',t:'~1 hr',k:[{i:'2j',tt:'Decompress · voice note for tomorrow',m:'',tm:''}]},
+    {l:'Evening — recovery',b:'bn',t:'after 7 pm',k:[{i:'2k',tt:'Family + TV and rest',m:'',tm:''}]}
+  ]},
+  3:{n:'Side projects + reporting + gym 💪',s:[
+    {l:'Fajr window',b:'bg',t:'4:00 – 7:30',k:[
+      {i:'3a',tt:'Option A — paid side projects',m:'Continue or next client · one deliverable only',tm:'4:30',o:0},
+      {i:'3b',tt:'Option B — pray and rest until 7:30',m:'',tm:'4:00',o:1}]},
+    {l:'School run',b:'bn',t:'by 7:00',k:[{i:'3c',tt:'Kids to school or Uber',m:'',tm:'6:50'}]},
+    {l:'Commute',b:'bp',t:'~1 hr',k:[
+      {i:'3d',tt:'Work calls',m:'',tm:'7:45'},
+      {i:'3e',tt:'Last 15 min — skill audio',m:'',tm:''}]},
+    {l:'Main job',b:'br',t:'8:00 – 3:00',k:[
+      {i:'3f',tt:'Job — primary deliverables',m:'',tm:'8:00'},
+      {i:'3g',tt:'Project follow-up & reporting — 1 hr',m:'Update trackers · flag risks · midweek status check',tm:'17:00'},
+      {i:'3h',tt:'Talent & management — 20 min',m:'',tm:''}]},
+    {l:'Gym 💪',b:'ba',t:'3:00 – 4:30',k:[{i:'3i',tt:'Gym session — 60 to 90 min',m:'',tm:'15:00'}]},
+    {l:'Commute — return',b:'bp',t:'~1 hr',k:[{i:'3j',tt:'Decompress · voice note for tomorrow',m:'',tm:''}]},
+    {l:'Evening — recovery',b:'bn',t:'after 7 pm',k:[{i:'3k',tt:'Family + TV and rest',m:'',tm:''}]}
+  ]},
+  4:{n:'Unstuck session — one stuck project moves today.',s:[
+    {l:'Fajr window',b:'bg',t:'4:00 – 7:30',k:[
+      {i:'4a',tt:'Option A — unstuck session',m:'Most stuck future project · do its one step · nothing else',tm:'4:30',o:0},
+      {i:'4b',tt:'Option B — pray and rest until 7:30',m:'',tm:'4:00',o:1}]},
+    {l:'School run',b:'bn',t:'by 7:00',k:[{i:'4c',tt:'Kids to school or Uber',m:'',tm:'6:50'}]},
+    {l:'Commute',b:'bp',t:'~1 hr',k:[
+      {i:'4d',tt:'Work calls',m:'',tm:'7:45'},
+      {i:'4e',tt:'Last 15 min — skill audio',m:'',tm:''}]},
+    {l:'Main job',b:'br',t:'8:00 – 6:00',k:[
+      {i:'4f',tt:'Job — primary deliverables',m:'',tm:'8:00'},
+      {i:'4g',tt:'Side gig slot — 1 hr',m:'',tm:''},
+      {i:'4h',tt:'Skill deep practice — 30 min',m:'Apply current 60-day skill to a real work scenario',tm:''}]},
+    {l:'Commute — return',b:'bp',t:'~1 hr',k:[{i:'4i',tt:'Decompress · review week so far',m:'What moved? What is still stuck going into the weekend?',tm:''}]},
+    {l:'Evening — recovery',b:'bn',t:'after 7 pm',k:[{i:'4j',tt:'Family + TV and rest',m:'',tm:''}]}
+  ]},
+  5:{n:'Side work morning. Jumma. Rest. Evening with kids.',s:[
+    {l:'Morning — side work',b:'bc',t:'5:00 – 9:00',k:[
+      {i:'5a',tt:'Paid side projects or Mizan',m:'2 to 3 hrs · your energy is real here · use it fully',tm:'5:00'},
+      {i:'5b',tt:'Mizan / Farah / posts — this week\'s step',m:'30 min · open Projects tab and complete the step',tm:''}]},
+    {l:'Jumma prayer',b:'bg',t:'~12:00',k:[{i:'5c',tt:'Jumma prayer',m:'',tm:'12:00'}]},
+    {l:'Post-Jumma rest',b:'bn',t:'1:30 – 3:30',k:[{i:'5d',tt:'Sleep 2 hrs — in the plan, not a slip',m:'Scheduled recovery. Not guilt.',tm:'13:30'}]},
+    {l:'Parents & siblings',b:'bt',t:'after rest',k:[{i:'5e',tt:'Call or visit — parents and siblings',m:'Even a 15-minute call counts. Do not skip.',tm:'16:00'}]},
+    {l:'Evening — kids',b:'bt',t:'until end of day',k:[{i:'5f',tt:'Evening out with kids',m:'Full presence · no work phone · recharge completely',tm:''}]}
+  ]},
+  6:{n:'Job until 3 pm. Long-run thinking in the afternoon.',s:[
+    {l:'Pre-work block',b:'bg',t:'post-Fajr 1 hr',k:[{i:'6a',tt:'Paid side projects — 1 hr',m:'One deliverable before heading to work. Small but real.',tm:'4:30'}]},
+    {l:'Commute',b:'bp',t:'~1 hr',k:[{i:'6b',tt:'Work calls',m:'',tm:'7:45'}]},
+    {l:'Main job',b:'br',t:'8:00 – 3:00',k:[{i:'6c',tt:'Primary job — full focus',m:'No side project decisions during work hours',tm:'8:00'}]},
+    {l:'Long-run alignment',b:'bc',t:'4:00 – 5:30',k:[
+      {i:'6d',tt:'Personal plans alignment — 90 min',m:'90-day targets · financial goals · life direction · where am I going',tm:'16:00'},
+      {i:'6e',tt:'Cars — weekly numbers check',m:'Income · contracts · leads · next growth steps',tm:'16:45'}]},
+    {l:'Evening — recovery',b:'bn',t:'after 6 pm',k:[{i:'6f',tt:'Rest · family · recharge',m:'Week is done. You earned it. Nothing else tonight.',tm:''}]}
+  ]}
+};
+
+const FP=[
+  {id:'fp1',nm:'Mizan — Technical Review',cl:'bp',st:'Slow',
+   step:'Write one service description — 1 paragraph only. What do you offer and to whom exactly?',
+   nxt:'→ Next: send one direct message to a potential client or professional contact'},
+  {id:'fp2',nm:'Farah — Event Planning',cl:'bc',st:'Concept',
+   step:'Write the service model in 3 bullet points. What service, for whom, at what price range?',
+   nxt:'→ Next: identify 2 potential first clients from your existing network'},
+  {id:'fp3',nm:'Posts & Content',cl:'ba',st:'Slow',
+   step:'Write one post draft on any topic you know well. Do not publish yet — just write.',
+   nxt:'→ Next: build a list of 10 topics you can speak about with authority'}
+];
+
+function wkid(){const d=new Date(),j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'w'+Math.ceil(((d-j)/86400000+j.getDay()+1)/7)}
+function sk(d){return 'dro3_'+d+'_'+wkid()}
+function fpk(){return 'dro3_fp_'+wkid()}
+function ld(d){try{return JSON.parse(localStorage.getItem(sk(d))||'{}')}catch(e){return{}}}
+function sv(d,s){try{localStorage.setItem(sk(d),JSON.stringify(s))}catch(e){}}
+function ldfp(){try{return JSON.parse(localStorage.getItem(fpk())||'{}')}catch(e){return{}}}
+function svfp(s){try{localStorage.setItem(fpk(),JSON.stringify(s))}catch(e){}}
+
+function pct(day){
+  const st=ld(day),dt=SCH[day];let t=0,dn=0;
+  dt.s.forEach(s=>s.k.forEach(k=>{t++;if(st[k.i])dn++}));
+  return t?Math.round(dn/t*100):0;
+}
+function calcStreak(){
+  let s=0;
+  for(let i=1;i<=28;i++){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const di=d.getDay();
+    const ww=(()=>{const j=new Date(d.getFullYear(),0,1);return d.getFullYear()+'w'+Math.ceil(((d-j)/86400000+j.getDay()+1)/7)})();
+    try{
+      const st=JSON.parse(localStorage.getItem('dro3_'+di+'_'+ww)||'{}');
+      const dt=SCH[di];let t=0,dn=0;
+      dt.s.forEach(s=>s.k.forEach(k=>{t++;if(st[k.i])dn++}));
+      if(t>0&&dn/t>=0.5)s++;else break;
+    }catch(e){break}
+  }
+  return s;
+}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2200);
+}
+function gt(tab){
+  ct=tab;
+  ['today','week','proj','rem'].forEach(t=>document.getElementById('n-'+t).classList.toggle('on',t===tab));
+  render();
+}
+function renderStrip(){
+  const el=document.getElementById('strip');el.innerHTML='';
+  DE.forEach((d,i)=>{
+    const c=document.createElement('div');
+    c.className='dc'+(i===cd?' on':'');
+    const p=pct(i);if(p>0&&i!==cd)c.classList.add('prog');
+    const dd=new Date(NOW);dd.setDate(NOW.getDate()-(NOW.getDay()-i));
+    c.innerHTML=`<span class="dn">${d}</span><span class="dd">${dd.getDate()}</span><span class="dot"></span>`;
+    c.onclick=()=>{cd=i;document.getElementById('hday').textContent=DF[i];renderStrip();render()};
+    el.appendChild(c);
+  });
+  setTimeout(()=>{const a=el.querySelector('.on');if(a)a.scrollIntoView({inline:'center',behavior:'smooth',block:'nearest'})},50);
+}
+function render(){
+  const body=document.getElementById('body');body.innerHTML='';
+  if(ct==='today')rToday(body);
+  else if(ct==='week')rWeek(body);
+  else if(ct==='proj')rProj(body);
+  else rAlarms(body);
+}
+function rToday(body){
+  const dt=SCH[cd],st=ld(cd);
+  let tot=0,dn=0;dt.s.forEach(s=>s.k.forEach(k=>{tot++;if(st[k.i])dn++}));
+  const p=tot?Math.round(dn/tot*100):0;
+  const pc=document.createElement('div');pc.className='prog-card';
+  pc.innerHTML=`<div class="prog-top"><div class="prog-sublabel">Day progress</div><div class="prog-num">${p}%</div></div><div class="prog-bar"><div class="prog-fill" style="width:${p}%"></div></div><div class="prog-grid"><div class="prog-box"><div class="prog-box-n">${dn}</div><div class="prog-box-l">Done</div></div><div class="prog-box"><div class="prog-box-n">${tot-dn}</div><div class="prog-box-l">Left</div></div><div class="prog-box"><div class="prog-box-n">${GYM.includes(cd)?'💪':'—'}</div><div class="prog-box-l">${GYM.includes(cd)?'Gym day':'No gym'}</div></div></div>`;
+  body.appendChild(pc);
+  const nb=document.createElement('div');nb.className='day-note';nb.textContent=dt.n;body.appendChild(nb);
+  dt.s.forEach(sec=>{
+    const sw=document.createElement('div');sw.className='sec-wrap';
+    sw.innerHTML=`<div class="sec-row"><span class="sec-name">${sec.l}</span><span class="bdg ${sec.b}">${sec.t}</span></div>`;
+    body.appendChild(sw);
+    sec.k.forEach(task=>{
+      const isDone=!!st[task.i];
+      const tc=document.createElement('div');
+      tc.className='task'+(isDone?' done':'')+(task.o?' opt':'');
+      tc.innerHTML=`<div class="chk"><div class="chk-dot"></div></div><div class="task-body"><div class="task-t">${task.tt}</div>${task.m?`<div class="task-m">${task.m}</div>`:''} ${task.tm?`<div class="task-tm">⏰ ${task.tm}</div>`:''}</div>`;
+      tc.onclick=()=>{
+        const s=ld(cd);s[task.i]=!s[task.i];sv(cd,s);
+        if(s[task.i])toast('Done ✓');
+        document.getElementById('sn').textContent=calcStreak();
+        renderStrip();render();
+      };
+      body.appendChild(tc);
+    });
+  });
+  const rr=document.createElement('div');rr.className='reset-row';
+  rr.innerHTML=`<button class="reset-btn" onclick="doReset()">↺ Reset day</button>`;
+  body.appendChild(rr);
+}
+function rWeek(body){
+  const t=document.createElement('div');t.className='view-title';t.textContent='This week';body.appendChild(t);
+  const s=document.createElement('div');s.className='view-sub';s.textContent='Tap any day to open it. Green dot means progress was made.';body.appendChild(s);
+  const cols=['#d4a843','#38d9c0','#a78bfa','#fbbf24','#f87171','#d4a843','#38d9c0'];
+  DF.forEach((name,i)=>{
+    const p=pct(i);
+    const r=document.createElement('div');r.className='week-row';
+    r.innerHTML=`<span class="w-day">${DE[i]} · ${name.slice(0,3)}</span><div class="w-bar"><div class="w-fill" style="width:${p}%;background:${cols[i]}"></div></div><span class="w-pct">${p}%</span>${GYM.includes(i)?'<span class="gym-tag">Gym</span>':''}`;
+    r.onclick=()=>{cd=i;document.getElementById('hday').textContent=DF[i];renderStrip();gt('today')};
+    body.appendChild(r);
+  });
+}
+function rProj(body){
+  const fpst=ldfp();
+  const t=document.createElement('div');t.className='view-title';t.textContent='Future projects';body.appendChild(t);
+  const s=document.createElement('div');s.className='view-sub';s.textContent='One step per project this week. Mark it done. These will not be dropped.';body.appendChild(s);
+  FP.forEach(fp=>{
+    const done=!!fpst[fp.id];
+    const gc=document.createElement('div');gc.className='proj-card';
+    const ds=done?'background:rgba(74,222,128,.12);color:#4ade80;border-color:rgba(74,222,128,.28)':'';
+    gc.innerHTML=`<div class="proj-header"><div class="proj-name">${fp.nm}</div><span class="bdg ${fp.cl}" style="${ds}">${done?'Done ✓':fp.st}</span></div><div class="proj-step">${fp.step}</div><div class="proj-nxt">${fp.nxt}</div><div class="proj-ck${done?' done':''}" onclick="toggleFp('${fp.id}')"><div class="proj-chkbox"><div class="proj-chkdot"></div></div><span class="proj-ck-lbl">${done?'Step done this week':'Mark this week\'s step done'}</span></div>`;
+    body.appendChild(gc);
+  });
+  const ab=document.createElement('button');ab.className='add-btn';
+  ab.textContent='+ Add your full projects list here';
+  ab.onclick=()=>toast('Open Claude and type: add my projects to DRO');
+  body.appendChild(ab);
+}
+function rAlarms(body){
+  const rems=REMS[cd]||[];
+  const t=document.createElement('div');t.className='view-title';t.textContent=DF[cd]+' alarms';body.appendChild(t);
+  const s=document.createElement('div');s.className='view-sub';s.textContent='Copy each alarm into your phone Clock app as a repeating weekly alarm.';body.appendChild(s);
+  const card=document.createElement('div');card.className='alarm-card';
+  rems.forEach(r=>{
+    const row=document.createElement('div');row.className='alarm-row';
+    const sl=r.l.replace(/'/g,"\\'");
+    row.innerHTML=`<span class="a-time">${r.t}</span><span class="a-lbl">${r.l}</span><button class="a-copy" onclick="cpyA(event,'${r.t}','${sl}',this)">Copy</button>`;
+    card.appendChild(row);
+  });
+  body.appendChild(card);
+  const hint=document.createElement('div');hint.className='sync-box';
+  hint.innerHTML=`<strong>How to sync to your phone</strong>1. Tap Copy next to each alarm<br>2. Open Clock app → New alarm<br>3. Set the time and paste the label<br>4. Repeat → select this day of week<br>5. Done — it reminds you every week`;
+  body.appendChild(hint);
+  const ca=document.createElement('button');ca.className='copy-all-btn';
+  ca.textContent='Copy all alarms for '+DF[cd];
+  ca.onclick=()=>{
+    const txt=rems.map(r=>r.t+' — '+r.l).join('\n');
+    navigator.clipboard.writeText(txt).then(()=>toast('All alarms copied')).catch(()=>toast('Long-press to copy'));
+  };
+  body.appendChild(ca);
+}
+function cpyA(e,t,l,btn){
+  e.stopPropagation();
+  navigator.clipboard.writeText(t+' — '+l).then(()=>{
+    btn.textContent='Done ✓'; btn.classList.add('ok');
+    toast('Copied: '+t);
+    setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('ok')},2000);
+  }).catch(()=>toast('Long-press to copy'));
+}
+function toggleFp(id){
+  const s=ldfp();s[id]=!s[id];svfp(s);
+  toast(s[id]?'Step marked done ✓':'Unmarked');render();
+}
+function doReset(){
+  if(confirm('Reset all tasks for '+DF[cd]+'?')){sv(cd,{});renderStrip();render();toast('Day reset');}
+}
+document.getElementById('hday').textContent=DF[cd];
+document.getElementById('hdate').textContent=NOW.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('sn').textContent=calcStreak();
+renderStrip(); render();
+</script>
+</body>
+</html>
